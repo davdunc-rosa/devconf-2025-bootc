@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fedora-llm-agent
+  labels:
+    app: fedora-llm-agent
+    component: inference
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fedora-llm-agent
+  template:
+    metadata:
+      labels:
+        app: fedora-llm-agent
+    spec:
+      containers:
+      - name: llm-agent
+        image: fedora-llm:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_PATH
+          value: "/models/trained-model"
+        - name: INFERENCE_MODE
+          value: "true"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: llm-model-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fedora-llm-service
+  labels:
+    app: fedora-llm-agent
+spec:
+  selector:
+    app: fedora-llm-agent
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-model-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: gp3

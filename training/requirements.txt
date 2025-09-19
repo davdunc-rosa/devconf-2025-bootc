@@ -1,0 +1,15 @@
+torch>=2.0.0
+transformers>=4.30.0
+datasets>=2.12.0
+accelerate>=0.20.0
+bitsandbytes>=0.39.0
+peft>=0.4.0
+trl>=0.4.0
+wandb>=0.15.0
+tensorboard>=2.13.0
+jupyter>=1.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+huggingface-hub>=0.15.0
+tokenizers>=0.13.0
