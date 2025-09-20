@@ -3,15 +3,34 @@
 
 ---
 
+## 🎯 Interactive Workshop Format
+
+### **Three Hands-On Exercises**
+1. **🛠️ Build Bootable Container** - Experience Fedora bootc firsthand
+2. **☁️ Configure Cloud-Init** - Set up automated deployment
+3. **🦙 RamaLama Model Management** - Container-native LLM operations
+
+### **Prerequisites Check**
+- **Podman** or Docker installed
+- **Git, curl, jq** available
+- **Python 3.9+** for RamaLama
+- **Setup script**: `./scripts/participant-setup.sh`
+
+### **Repository**: `https://github.com/your-repo/fedora-llm-training`
+
+---
+
 ## Agenda
 
 1. **Enterprise AI Challenge**
-2. **Red Hat's AI Strategy**
-3. **Fedora-First Architecture**
-4. **Enterprise Inference Servers**
-5. **OpenShift Integration**
-6. **Production Deployment**
-7. **Community & Future**
+2. **Red Hat's AI Strategy** 
+3. **🛠️ Hands-On #1: Build Bootable Container**
+4. **Fedora bootc Architecture**
+5. **🛠️ Hands-On #2: Cloud-Init Configuration**
+6. **RamaLama Integration**
+7. **🛠️ Hands-On #3: Model Management**
+8. **Production Deployment**
+9. **Q&A & Next Steps**
 
 ---
 
@@ -486,65 +505,105 @@ spec:
 
 ---
 
-## Demo: Bootable Container Workflow
+## 🛠️ Hands-On Exercise #1: Build Your First Bootable Container
 
-### 1. Build Bootable Container
+### **Follow Along: Build Bootable Container**
+*Participants: Open your terminals and follow these steps*
+
 ```bash
-# Build Fedora bootc image
+# 1. Clone the repository
+git clone https://github.com/your-repo/fedora-llm-training
+cd fedora-llm-training
+
+# 2. Build Fedora bootc image
 podman build -t fedora-llm-bootc:42 -f containers/Containerfile.fedora-llm .
 
-# Test as regular container
+# 3. Test as regular container (optional)
 podman run -it --rm --systemd=always \
   -v $(pwd)/training:/opt/llm-training \
-  fedora-llm-bootc:42
+  fedora-llm-bootc:42 /bin/bash
 
-# Create bootable disk image
+# 4. Check what we built
+podman images | grep fedora-llm-bootc
+```
+
+**Expected Output**: You should see your bootable container image listed
+**Time**: ~5 minutes
+
+### 2. Create Bootable Disk Images
+```bash
+# Create different bootable formats
 sudo podman run --rm --privileged \
   -v $(pwd):/output \
   quay.io/centos-bootc/bootc-image-builder:latest \
-  --type ami fedora-llm-bootc:42
+  --type qcow2 fedora-llm-bootc:42
+
+# List created images
+ls -lh *.qcow2
 ```
 
-### 2. Deploy to EC2 with Cloud-Init
+---
+
+## 🛠️ Hands-On Exercise #2: Deploy and Configure Cloud-Init
+
+### **Follow Along: Cloud-Init Configuration**
+*Participants: Let's configure cloud-init for your environment*
+
 ```bash
-# Deploy EC2 instance with bootable AMI
-export KEY_NAME="my-aws-key"
-./scripts/deploy-ec2.sh
+# 1. Set your AWS key name
+export KEY_NAME="your-aws-key-name"
 
-# Cloud-init automatically:
-# - Configures users and SSH keys
-# - Detects GPU hardware
-# - Sets up training environment
-# - Starts LLM training service
+# 2. Generate cloud-init user data
+./scripts/generate-user-data.sh
 
-# SSH to running system
-ssh -i ~/.ssh/my-aws-key.pem fedora@<instance-ip>
+# 3. Review the generated configuration
+cat infrastructure/user-data-generated.yaml
 
-# Check cloud-init status
-cloud-init status --long
+# 4. Test cloud-init locally (simulation)
+cloud-init schema --config-file infrastructure/user-data-generated.yaml
 
-# Training service auto-started by cloud-init
-systemctl status llm-training.service
+# 5. (Optional) Deploy to EC2 if you have AWS access
+# ./scripts/deploy-ec2.sh
 ```
 
-### 3. RamaLama Model Management
+**Expected Output**: Valid cloud-init configuration file
+**Time**: ~3 minutes
+
+---
+
+## 🛠️ Hands-On Exercise #3: RamaLama Model Management
+
+### **Follow Along: Container-Native LLM Operations**
+*Participants: Experience RamaLama in action*
+
 ```bash
-# RamaLama service auto-started by systemd
-systemctl status ramalama-inference.service
+# 1. Install RamaLama (if not in container)
+pip3 install ramalama
 
-# Manage models with container-like commands
-/opt/scripts/manage-models.sh pull llama2:7b-chat
-/opt/scripts/manage-models.sh list
-/opt/scripts/manage-models.sh serve llama2:7b-chat 8080
+# 2. Pull a small model for testing
+ramalama pull tinyllama:1.1b-chat
 
-# Test OpenAI-compatible API
+# 3. List available models
+ramalama list
+
+# 4. Start inference server in background
+ramalama serve --port 8080 --host 0.0.0.0 tinyllama:1.1b-chat &
+
+# 5. Test the OpenAI-compatible API
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "llama2:7b-chat", "messages": [{"role": "user", "content": "Hello!"}]}'
+  -d '{
+    "model": "tinyllama:1.1b-chat",
+    "messages": [{"role": "user", "content": "Hello! Explain bootable containers in one sentence."}],
+    "max_tokens": 50
+  }' | jq '.choices[0].message.content'
 
-# System updates (atomic)
-bootc switch fedora-llm-bootc:43 && systemctl reboot
+# 6. Clean up
+pkill -f ramalama
 ```
+
+**Expected Output**: AI response about bootable containers
+**Time**: ~4 minutes
 
 ---
 
