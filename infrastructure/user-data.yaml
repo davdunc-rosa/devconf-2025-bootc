@@ -1,0 +1,139 @@
+#cloud-config
+# Fedora LLM Training EC2 Instance Cloud-Init
+
+hostname: ${project_name}-instance
+fqdn: ${project_name}-instance.ec2.internal
+
+# User configuration
+users:
+  - name: fedora
+    gecos: Fedora Cloud User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: wheel,adm,systemd-journal
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+# System updates
+package_update: true
+package_upgrade: false
+
+# Additional packages for EC2
+packages:
+  - awscli
+  - ec2-instance-utils
+  - htop
+  - tmux
+
+# Disk configuration
+growpart:
+  mode: auto
+  devices: ['/']
+
+# Write EC2-specific configuration
+write_files:
+  - path: /etc/llm-training/ec2-config.conf
+    content: |
+      # EC2 Instance Configuration
+      CLOUD_PROVIDER=aws
+      INSTANCE_METADATA_URL=http://169.254.169.254/latest/meta-data/
+      
+      # Training configuration
+      TRAINING_ENABLED=true
+      AUTO_START_TRAINING=true
+      GPU_ENABLED=true
+      
+      # Logging
+      LOG_TO_CLOUDWATCH=false
+      LOG_LEVEL=INFO
+    permissions: '0644'
+    owner: root:root
+
+  - path: /opt/scripts/ec2-setup.sh
+    content: |
+      #!/bin/bash
+      set -e
+      
+      echo "Starting EC2-specific setup..."
+      
+      # Get instance metadata
+      INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+      INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/meta-data/instance-type)
+      AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+      REGION=$${AZ%?}
+      PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+      
+      echo "Instance ID: $INSTANCE_ID"
+      echo "Instance Type: $INSTANCE_TYPE"
+      echo "Availability Zone: $AZ"
+      echo "Region: $REGION"
+      echo "Public IP: $PUBLIC_IP"
+      
+      # Update instance configuration
+      cat >> /etc/llm-training/ec2-config.conf << EOF
+      INSTANCE_ID=$INSTANCE_ID
+      INSTANCE_TYPE=$INSTANCE_TYPE
+      AVAILABILITY_ZONE=$AZ
+      REGION=$REGION
+      PUBLIC_IP=$PUBLIC_IP
+      EOF
+      
+      # Configure GPU if available (for GPU instance types)
+      if [[ "$INSTANCE_TYPE" == g* ]] || [[ "$INSTANCE_TYPE" == p* ]]; then
+          echo "GPU instance detected: $INSTANCE_TYPE"
+          
+          # Ensure NVIDIA drivers are loaded
+          if lspci | grep -i nvidia; then
+              echo "NVIDIA GPU found, configuring..."
+              usermod -aG video llm-user
+              
+              # Test GPU access
+              if command -v nvidia-smi &> /dev/null; then
+                  nvidia-smi
+              fi
+          fi
+      fi
+      
+      # Set up training directories with proper permissions
+      mkdir -p /opt/llm-training/{logs,models,data,checkpoints}
+      chown -R llm-user:llm-user /opt/llm-training
+      
+      # Start training service if enabled
+      if systemctl is-enabled llm-training.service &> /dev/null; then
+          echo "Starting LLM training service..."
+          systemctl start llm-training.service
+          sleep 5
+          systemctl status llm-training.service
+      fi
+      
+      echo "EC2 setup completed successfully"
+    permissions: '0755'
+    owner: root:root
+
+# Run commands
+runcmd:
+  - /opt/scripts/ec2-setup.sh
+  - echo "Fedora LLM Training instance ready" > /var/log/setup-complete.log
+
+# Final message
+final_message: |
+  Fedora LLM Training EC2 instance is ready!
+  
+  Instance Details:
+  - Project: ${project_name}
+  - Instance ID: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+  - Instance Type: $(curl -s http://169.254.169.254/latest/meta-data/instance-type)
+  - Public IP: $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+  
+  Services Status:
+  - SSH: $(systemctl is-active sshd)
+  - LLM Training: $(systemctl is-active llm-training.service)
+  
+  Connect via SSH:
+  ssh -i ~/.ssh/${project_name}.pem fedora@$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+  
+  View training logs:
+  journalctl -u llm-training.service -f
+  
+  System ready for LLM training workloads!

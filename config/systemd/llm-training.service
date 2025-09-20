@@ -1,0 +1,20 @@
+[Unit]
+Description=Fedora LLM Training Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=llm-user
+Group=llm-user
+WorkingDirectory=/opt/llm-training
+Environment=PYTHONPATH=/opt/llm-training
+Environment=CUDA_VISIBLE_DEVICES=0
+ExecStart=/usr/bin/python3 /opt/llm-training/train.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,125 @@
+#cloud-config
+# Fedora LLM Training Cloud-Init Configuration
+
+# System configuration
+hostname: fedora-llm-trainer
+fqdn: fedora-llm-trainer.ec2.internal
+
+# User configuration
+users:
+  - name: fedora
+    gecos: Fedora Cloud User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: wheel,adm,systemd-journal
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${SSH_PUBLIC_KEY}
+  - name: llm-user
+    gecos: LLM Training User
+    groups: wheel,video
+    shell: /bin/bash
+    lock_passwd: true
+    system: false
+
+# Package updates and installations
+package_update: true
+package_upgrade: false
+
+packages:
+  - htop
+  - tmux
+  - git
+  - curl
+  - wget
+
+# Disk and filesystem configuration
+growpart:
+  mode: auto
+  devices: ['/']
+  ignore_growroot_disabled: false
+
+# Write additional configuration files
+write_files:
+  - path: /etc/llm-training/instance-config.conf
+    content: |
+      # Instance-specific configuration
+      INSTANCE_ID=${INSTANCE_ID}
+      INSTANCE_TYPE=${INSTANCE_TYPE}
+      AVAILABILITY_ZONE=${AVAILABILITY_ZONE}
+      REGION=${REGION}
+      
+      # Training configuration
+      TRAINING_ENABLED=true
+      AUTO_START_TRAINING=true
+      GPU_ENABLED=true
+    permissions: '0644'
+    owner: root:root
+
+  - path: /opt/scripts/cloud-init-setup.sh
+    content: |
+      #!/bin/bash
+      set -e
+      
+      echo "Starting cloud-init setup for LLM training..."
+      
+      # Set up GPU if available
+      if lspci | grep -i nvidia; then
+          echo "NVIDIA GPU detected, configuring drivers..."
+          # GPU setup will be handled by the container image
+          usermod -aG video llm-user
+      fi
+      
+      # Configure training environment
+      mkdir -p /opt/llm-training/logs
+      mkdir -p /opt/llm-training/models
+      mkdir -p /opt/llm-training/data
+      
+      chown -R llm-user:llm-user /opt/llm-training
+      chmod 755 /opt/llm-training
+      
+      # Start training service if enabled
+      if systemctl is-enabled llm-training.service; then
+          echo "Starting LLM training service..."
+          systemctl start llm-training.service
+      fi
+      
+      echo "Cloud-init setup completed successfully"
+    permissions: '0755'
+    owner: root:root
+
+# Run commands during cloud-init
+runcmd:
+  - /opt/scripts/cloud-init-setup.sh
+  - systemctl enable cloud-init-local
+  - systemctl enable cloud-init
+  - systemctl enable cloud-config
+  - systemctl enable cloud-final
+
+# Final message
+final_message: |
+  Fedora LLM Training instance is ready!
+  
+  Instance Details:
+  - Hostname: $HOSTNAME
+  - Instance ID: $INSTANCE_ID
+  - Instance Type: $INSTANCE_TYPE
+  - Region: $REGION
+  
+  Services:
+  - SSH: Enabled
+  - LLM Training: $(systemctl is-active llm-training.service)
+  
+  Logs:
+  - Cloud-init: /var/log/cloud-init.log
+  - Training: journalctl -u llm-training.service
+  
+  Connect via SSH:
+  ssh fedora@$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+
+# Power state - keep instance running
+power_state:
+  mode: reboot
+  delay: 0
+  timeout: 30
+  condition: true

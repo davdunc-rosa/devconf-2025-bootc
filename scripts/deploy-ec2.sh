@@ -20,6 +20,11 @@ if [ ! -z "$1" ]; then
     KEY_NAME="$1"
 fi
 
+# Generate cloud-init user data
+echo "Generating cloud-init user data..."
+export KEY_NAME PROJECT_NAME
+./scripts/generate-user-data.sh
+
 cd infrastructure
 
 # Initialize Terraform if needed

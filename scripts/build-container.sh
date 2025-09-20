@@ -19,6 +19,9 @@ podman run --rm ${CONTAINER_NAME}:${TAG} python3 --version
 
 echo "Build complete!"
 echo ""
+echo "Note: This builds a regular container. For bootable containers, use:"
+echo "  ./scripts/build-bootc-container.sh"
+echo ""
 echo "To run the container:"
 echo "  podman run -it --rm -v \$(pwd)/training:/opt/llm-training ${CONTAINER_NAME}:${TAG} bash"
 echo ""

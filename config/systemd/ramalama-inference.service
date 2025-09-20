@@ -1,0 +1,29 @@
+[Unit]
+Description=RamaLama LLM Inference Service
+After=network.target
+Wants=network.target
+Requires=podman.socket
+
+[Service]
+Type=simple
+User=llm-user
+Group=llm-user
+WorkingDirectory=/opt/llm-training
+Environment=RAMALAMA_STORE=/opt/llm-training/models
+Environment=CUDA_VISIBLE_DEVICES=0
+ExecStartPre=/usr/bin/ramalama pull llama2:7b-chat
+ExecStart=/usr/bin/ramalama serve --port 8080 --host 0.0.0.0 llama2:7b-chat
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/llm-training
+
+[Install]
+WantedBy=multi-user.target

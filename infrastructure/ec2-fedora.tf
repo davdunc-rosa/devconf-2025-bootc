@@ -103,8 +103,9 @@ resource "aws_instance" "fedora_llm_trainer" {
 
   vpc_security_group_ids = [aws_security_group.fedora_llm.id]
 
-  user_data = base64encode(templatefile("${path.module}/user-data.sh", {
+  user_data = base64encode(templatefile("${path.module}/user-data.yaml", {
     project_name = var.project_name
+    ssh_public_key = file("~/.ssh/${var.key_name}.pub")
   }))
 
   root_block_device {
