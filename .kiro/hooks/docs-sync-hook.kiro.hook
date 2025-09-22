@@ -1,0 +1,28 @@
+{
+  "enabled": true,
+  "name": "Documentation Sync",
+  "description": "Listens to source files and configuration changes to automatically update documentation in README.md and docs folder",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.py",
+      "*.sh",
+      "*.yaml",
+      "*.yml",
+      "*.conf",
+      "*.tf",
+      "*.md",
+      "config/**/*",
+      "containers/**/*",
+      "infrastructure/**/*",
+      "kubernetes/**/*",
+      "scripts/**/*",
+      "training/**/*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source files have been modified. Please review the changes and update the documentation accordingly. Update the README.md file and any relevant documentation in the /docs folder to reflect the current state of the project, including any new features, configuration changes, or usage instructions."
+  }
+}
