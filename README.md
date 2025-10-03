@@ -177,6 +177,35 @@ See [`examples/ramalama-usage.md`](examples/ramalama-usage.md) for comprehensive
 - **Service Management**: `systemctl status llm-training.service`
 - **RamaLama Commands**: `ramalama pull/serve/list`
 
+## Recent Updates
+
+### Latest Features
+- **Enhanced Documentation**: Comprehensive platform overview and implementation guides
+- **RamaLama Integration**: Container-native LLM management with OpenAI-compatible APIs
+- **Bootable Container Architecture**: Immutable, reproducible deployments with Fedora bootc 42
+- **Enterprise Features**: systemd service management, GPU acceleration, security hardening
+- **Presentation Materials**: Executive summaries, technical presentations, and implementation guides
+
+### Current Capabilities
+- ✅ Fedora bootc 42 bootable container implementation
+- ✅ RamaLama model serving with systemd integration
+- ✅ Terraform-based AWS EC2 infrastructure deployment
+- ✅ GPU-accelerated training and inference
+- ✅ OpenAI-compatible API endpoints
+- ✅ Kubernetes deployment manifests
+- ✅ Comprehensive documentation and examples
+
 ## Technology Partnership
 
 Built on Red Hat/Fedora technologies to demonstrate enterprise-ready AI solutions with open source foundations, supporting Red Hat partnership initiatives while maintaining complete open-source alignment.
+
+## Contributing
+
+We welcome contributions to improve the platform:
+
+1. **Documentation**: Help improve guides and examples
+2. **Features**: Add new capabilities and optimizations
+3. **Testing**: Validate deployments across different environments
+4. **Community**: Share use cases and best practices
+
+See our documentation for detailed contribution guidelines.

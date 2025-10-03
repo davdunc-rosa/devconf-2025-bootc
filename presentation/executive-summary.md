@@ -20,16 +20,18 @@ Build a scalable, enterprise-ready LLM training platform using 100% Red Hat/Fedo
 ## Implementation Highlights
 
 ### Core Architecture
-- **Base Platform**: Fedora 39 bootable containers on AWS EC2
+- **Base Platform**: Fedora bootc 42 (bootable containers) on AWS EC2
+- **LLM Management**: RamaLama for container-native model serving
 - **Training Stack**: PyTorch + Transformers + Hugging Face ecosystem
-- **Orchestration**: Kubernetes with GPU resource management
-- **Infrastructure**: Terraform-managed AWS resources
+- **Orchestration**: systemd services + optional Kubernetes
+- **Infrastructure**: Terraform-managed AWS resources with cloud-init
 
 ### Key Metrics
-- **Performance**: 2x training speed improvement with GPU optimization
-- **Efficiency**: 40% memory reduction using FP16 precision
-- **Scalability**: Linear performance scaling across instances
-- **Cost**: Optimized for spot instances and auto-scaling
+- **Performance**: Optimized GPU utilization with CUDA 11.8+ support
+- **Efficiency**: Container-native model management with RamaLama
+- **Scalability**: Linear performance scaling across EC2 instances
+- **Cost**: Optimized for spot instances and immutable infrastructure
+- **Reliability**: Atomic updates with rollback capability
 
 ## Competitive Differentiation
 
